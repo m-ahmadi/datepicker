@@ -1,0 +1,13 @@
+node_modules/
+package-lock.json
+.sass-cache/
+.livereload
+.rtlcssrc
+html/link-modulepreload/*
+!html/link-modulepreload/root.htm
+html/script-app/*
+!html/script-app/root.htm
+public/lib/_templates.js
+public/css/*
+public/index.html
+release/*
