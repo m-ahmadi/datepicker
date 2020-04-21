@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "gulp": "latest",
-    "gulp-livereload": "latest",
+    "chokidar": "latest",
+    "livereload": "latest",
     "htmlbilder": "latest",
     "sass": "latest",
     "rtlcss": "latest"

@@ -1,3 +1,4 @@
 @echo off
+title build live
 call set.cmd
-gulp live
+node build.js live
