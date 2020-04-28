@@ -2,16 +2,19 @@ const { writeFileSync, readFileSync, existsSync, readdirSync, statSync, unlinkSy
 const { join, parse, extname, delimiter } = require('path');
 const { execSync } = require('child_process');
 const chokidar = require('chokidar');
+const indent = require('indent.js');
 process.env.path += delimiter + './node_modules/.bin';
 
 colors();
 const log = console.log;
 const args = process.argv.slice(2);
 args.includes('js')         ? runJs() :
+args.includes('html')       ? runHtml() :
 args.includes('temp')       ? runTemp() :
 args.includes('rtl')        ? runRtlcss() :
 
 args.includes('js-w')       ? watch('./public/js/**/*.js', runJs) :
+args.includes('html-w')     ? watch('./html/**/*', runHtml) :
 args.includes('temp-w')     ? watch('./template/**/*.htm', runTemp) :
 args.includes('rtl-w')      ? watch('./public/css/style.css', runRtlcss) :
 
@@ -24,14 +27,14 @@ debug();
 // js
 function runJs() {
 	const depGraph = getDependencyGraph('./public/js/main.js').map(i=>i.replace('public/','')).reverse();
-	const temps = '<script src="{{root}}/lib/_templates.js"></script>\n';
+	const temps = '<script src="${c.root}/lib/_templates.js"></script>\n';
 	const live = existsSync('.livereload') ? '\n'+ readFileSync('.livereload', 'utf8') : '';
 	
-	const modulepreloads = depGraph.map(i => `<link rel="modulepreload" href="{{root}}/${i}" />`).join('\n');
-	const app = depGraph.map(i => `<script type="module" src="{{root}}/${i}"></script>`).join('\n');
+	const modulepreloads = depGraph.map(i => '<link rel="modulepreload" href="${c.root}/'+i+'/>').join('\n');
+	const app = depGraph.map(i => '<script type="module" src="${c.root}/'+i+'></script>').join('\n');
 	
-	writeFileSync('./html/link-modulepreload/index.hbs', modulepreloads);
-	writeFileSync('./html/script-app/index.hbs', temps + app + live);
+	writeFileSync('./html/link-modulepreload/index.tmpl', modulepreloads);
+	writeFileSync('./html/script-app/index.tmpl', temps + app + live);
 	log('Ran js.'.green);
 }
 
@@ -48,6 +51,64 @@ function getDependencyGraph(entry, files, result=[]) {
 		}
 	}
 	if (entry) return [entry, ...new Set(result)].map(i => i.replace(/\\/g, '/'));
+}
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// html
+function runHtml() {
+	const rootDir     = './html';
+	const outFile     = './public/index.html';
+	const tempFile    = 'index.tmpl';
+	const	dataFileExt = '.htm';
+	const tree = dirTree(rootDir, dataFileExt);
+	const html = parseAndRender(tree, {tempFile, dataFileExt});
+	if (!html) return;
+	writeFileSync(outFile, indent.html(html, {tabString: '  '}), 'utf8');
+	log('Ran html.'.green);
+}
+
+function parseAndRender(node, settings) {
+	const dirs = getDirs(node);
+	if (dirs.length) {
+		dirs.forEach(k => {
+			if (getDirs(node[k]).length) {
+				node[k] = parseAndRender(node[k], settings);
+			} else {
+				node[k] = render(node[k], settings);
+			}
+		});
+	}
+	return render(node, settings);
+}
+function getDirs(node) {
+	return Object.keys(node).filter(k => Object.prototype.toString.call(node[k]) === '[object Object]');
+}
+function render(node, settings) {
+	const files     = Object.keys(node).filter( k => ['function','string'].includes(typeof node[k]) );
+	const tempFile  = files.find(k => k === settings.tempFile);
+	const dataFiles = files.filter(k => !extname(k) || extname(k) === settings.dataFileExt);
+	let result = '';
+	if (tempFile) {
+		const context = dataFiles.reduce((a,c) => (a[c.replace(extname(c), '')] = node[c]) && a, {});
+		result = node[tempFile](context);
+	} else {
+		result = dataFiles.reduce((a,c) => a += node[c]+'\n', '');
+	}
+	return result;
+}
+function dirTree(dir, dataFileExt, tree={}) {
+	readdirSync(dir).forEach(file => {
+		const path = join(dir, file);
+		if ( statSync(path).isDirectory() ) {
+			tree[file] = {};
+			dirTree(path, dataFileExt, tree[file]);
+		} else {
+			tree[file] = extname(file) === dataFileExt
+				? readFileSync(path, 'utf8')
+				: eval("(c={}) => `"+ readFileSync(path, 'utf8') +"`");
+			//: eval("(c={}) => { eval('var {'+Object.keys(c).join()+'} = c;'); return `"+ readFileSync(path, 'utf8') +"`; }");
+		}
+	});
+	return tree;
 }
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // templates
@@ -126,7 +187,7 @@ function full() {
 	writeFileSync(DEST+'/js/gen/root.js', `export default '${ROOT}';`);
 	
 	runJs();
-	log( execSync(`htmlbilder ${SRC}/html/ -o ${DEST}/index.html -t index.hbs`)+'' );
+	runHtml();
 	runTemp();
 	log( execSync(`sass ${SRC}/scss/style.scss:${DEST}/css/style.css`)+'' );
 }

@@ -9,7 +9,7 @@
   "devDependencies": {
     "chokidar": "latest",
     "livereload": "latest",
-    "htmlbilder": "latest",
+    "indent.js": "latest",
     "sass": "latest",
     "rtlcss": "latest"
   }
