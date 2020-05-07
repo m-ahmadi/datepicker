@@ -1,5 +1,5 @@
 const { writeFileSync, readFileSync, existsSync, readdirSync, statSync, unlinkSync } = require('fs');
-const { join, parse, extname, delimiter } = require('path');
+const { join, dirname, extname, delimiter } = require('path');
 const { execSync } = require('child_process');
 const chokidar = require('chokidar');
 const indent = require('indent.js');
@@ -42,12 +42,15 @@ function getDependencyGraph(entry, files, result=[]) {
 	if (entry) files = [entry = join(entry)];
 	for (const file of files) {
 		const content = readFileSync(file, 'utf8');
-		const matches = content.matchAll(/import.+from\s+'(.+)'/g);
-		for (const match of matches) {
-			const groups = match.slice(1);
-			const groupsJoined = groups.map( i => join(parse(file).dir, i) );
-			result.push(...groupsJoined);
-			if (groups.length) getDependencyGraph(undefined, groupsJoined, result);
+		const matchesIterator = content.matchAll(/import.+from\s+'(.+)'/g);
+		let matches = [];
+		for (const match of matchesIterator) {
+			const groups = match.slice(1).map( i => join(dirname(file), i) );
+			matches.push(...groups);
+		}
+		if (matches.length) {
+			result.push(...matches);
+			getDependencyGraph(undefined, matches, result);
 		}
 	}
 	if (entry) return [entry, ...new Set(result)].map(i => i.replace(/\\/g, '/'));
