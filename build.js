@@ -30,8 +30,8 @@ function runJs() {
 	const temps = '<script src="${c.root}/lib/_templates.js"></script>\n';
 	const live = existsSync('.livereload') ? '\n'+ readFileSync('.livereload', 'utf8') : '';
 	
-	const modulepreloads = depGraph.map(i => '<link rel="modulepreload" href="${c.root}/'+i+'/>').join('\n');
-	const app = depGraph.map(i => '<script type="module" src="${c.root}/'+i+'></script>').join('\n');
+	const modulepreloads = depGraph.map(i => '<link rel="modulepreload" href="${c.root}/'+i+'" />').join('\n');
+	const app = depGraph.map(i => '<script type="module" src="${c.root}/'+i+'"></script>').join('\n');
 	
 	writeFileSync('./html/link-modulepreload/index.tmpl', modulepreloads);
 	writeFileSync('./html/script-app/index.tmpl', temps + app + live);
