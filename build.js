@@ -161,7 +161,7 @@ function live() {
 			'./public/lib/_*'
 		].map( i => join(__dirname, i) )
 	);
-	log('livereload started...'.bMagenta);
+	log('livereload started...'.magentaB);
 }
 
 function toggleManualLivereload() {
@@ -170,10 +170,10 @@ function toggleManualLivereload() {
 	const file = '.livereload';
 	if ( existsSync(file) ) {
 		unlinkSync(file);
-		log('Off'.bRed);
+		log('Off'.redB);
 	} else {
 		writeFileSync(file, str);
-		log('On'.bGreen);
+		log('On'.greenB);
 	}
 }
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -209,17 +209,17 @@ function watch(path, fn, init=true) {
 			.on('unlink', fn)
 			.on('unlinkDir', fn)
 			.on('change', fn);
-		log('Watching...'.bMagenta, path.bWhite);
+		log('Watching...'.magentaB, path.whiteB);
 	});
 }
 
 function colors() {
 	[
 		['green',    32],
-		['bRed',     91],
-		['bGreen',   92],
-		['bMagenta', 95],
-		['bWhite',   97],
+		['redB',     91],
+		['greenB',   92],
+		['magentaB', 95],
+		['whiteB',   97],
 	].forEach(([k, n]) => {
 		String.prototype.__defineGetter__(k, function () {
 			return `[${n}m${this}[0m`;
