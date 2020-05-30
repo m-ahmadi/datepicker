@@ -33,8 +33,8 @@ function runJs() {
 	const modulepreloads = depGraph.map(i => '<link rel="modulepreload" href="${c.root}/'+i+'" />').join('\n');
 	const app = depGraph.map(i => '<script type="module" src="${c.root}/'+i+'"></script>').join('\n');
 	
-	writeFileSync('./html/link-modulepreload/index.tmpl', modulepreloads);
-	writeFileSync('./html/script-app/index.tmpl', temps + app + live);
+	writeFileSync('./html/link-modulepreload/index.htm', modulepreloads);
+	writeFileSync('./html/script-app/index.htm', temps + app + live);
 	log('Ran js.'.green);
 }
 
@@ -60,15 +60,14 @@ function getDependencyGraph(entry, files, result=[]) {
 function runHtml() {
 	const rootDir     = './html';
 	const outFile     = './public/index.html';
-	const tempFile    = 'index.tmpl';
-	const	dataFileExt = '.htm';
-	const tree = dirTree(rootDir, dataFileExt);
+	const tempFile    = 'index.htm';
+	const dataFileExt = '.htm';
+	const tree = dirTree(rootDir, dataFileExt, tempFile);
 	const html = parseAndRender(tree, {tempFile, dataFileExt});
 	if (!html) return;
 	writeFileSync(outFile, indent.html(html, {tabString: '  '}), 'utf8');
 	log('Ran html.'.green);
 }
-
 function parseAndRender(node, settings) {
 	const dirs = getDirs(node);
 	if (dirs.length) {
@@ -88,7 +87,7 @@ function getDirs(node) {
 function render(node, settings) {
 	const files     = Object.keys(node).filter( k => ['function','string'].includes(typeof node[k]) );
 	const tempFile  = files.find(k => k === settings.tempFile);
-	const dataFiles = files.filter(k => !extname(k) || extname(k) === settings.dataFileExt);
+	const dataFiles = files.filter(k => (!extname(k) || extname(k) === settings.dataFileExt) && k !== settings.tempFile);
 	let result = '';
 	if (tempFile) {
 		const context = dataFiles.reduce((a,c) => (a[c.replace(extname(c), '')] = node[c]) && a, {});
@@ -98,14 +97,14 @@ function render(node, settings) {
 	}
 	return result;
 }
-function dirTree(dir, dataFileExt, tree={}) {
+function dirTree(dir, dataFileExt, tempFile, tree={}) {
 	readdirSync(dir).forEach(file => {
 		const path = join(dir, file);
 		if ( statSync(path).isDirectory() ) {
 			tree[file] = {};
-			dirTree(path, dataFileExt, tree[file]);
+			dirTree(path, dataFileExt, tempFile, tree[file]);
 		} else {
-			tree[file] = extname(file) === dataFileExt
+			tree[file] = extname(file) === dataFileExt && file !== tempFile
 				? readFileSync(path, 'utf8')
 				: eval("(c={}) => `"+ readFileSync(path, 'utf8') +"`");
 			//: eval("(c={}) => { eval('var {'+Object.keys(c).join()+'} = c;'); return `"+ readFileSync(path, 'utf8') +"`; }");
