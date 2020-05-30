@@ -177,7 +177,7 @@ function toggleManualLivereload() {
 }
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // full builds
-function full() {
+function debug() {
 	const SRC = '.';
 	const DEST = './public';
 	const ROOT = '.';
